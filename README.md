@@ -21,7 +21,7 @@ The simplest way to use SweetAlertDialog is to add the library as aar dependency
     <dependency>
       <groupId>cn.pedant.sweetalert</groupId>
       <artifactId>library</artifactId>
-      <version>1.1</version>
+      <version>1.3</version>
       <type>aar</type>
     </dependency>
 
@@ -32,10 +32,46 @@ The simplest way to use SweetAlertDialog is to add the library as aar dependency
     }
 
     dependencies {
-        compile 'cn.pedant.sweetalert:library:1.1'
+        compile 'cn.pedant.sweetalert:library:1.3'
     }
 
 ## Usage
+
+show material progress
+
+    SweetAlertDialog pDialog = new SweetAlertDialog(this, SweetAlertDialog.PROGRESS_TYPE);
+    pDialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+    pDialog.setTitleText("Loading");
+    pDialog.setCancelable(false);
+    pDialog.show();
+
+![image](https://github.com/pedant/sweet-alert-dialog/raw/master/play_progress.gif)
+
+You can customize progress bar dynamically with materialish-progress methods via **SweetAlertDialog.getProgressHelper()**:
+- resetCount()
+- isSpinning()
+- spin()
+- stopSpinning()
+- getProgress()
+- setProgress(float progress)
+- setInstantProgress(float progress)
+- getCircleRadius()
+- setCircleRadius(int circleRadius)
+- getBarWidth()
+- setBarWidth(int barWidth)
+- getBarColor()
+- setBarColor(int barColor)
+- getRimWidth()
+- setRimWidth(int rimWidth)
+- getRimColor()
+- setRimColor(int rimColor)
+- getSpinSpeed()
+- setSpinSpeed(float spinSpeed)
+
+thanks to the project [materialish-progress](https://github.com/pnikosis/materialish-progress) and [@croccio](https://github.com/croccio) participation.
+
+more usages about progress, please see the sample.
+
 A basic message：
 
     new SweetAlertDialog(this)
@@ -88,7 +124,7 @@ Bind the listener to confirm button：
         .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
             @Override
             public void onClick(SweetAlertDialog sDialog) {
-                sDialog.dismiss();
+                sDialog.dismissWithAnimation();
             }
         })
         .show();
@@ -104,7 +140,7 @@ Show the cancel button and bind listener to it：
         .setCancelClickListener(new SweetAlertDialog.OnSweetClickListener() {
             @Override
             public void onClick(SweetAlertDialog sDialog) {
-                sDialog.dismiss();
+                sDialog.cancel();
             }
         })
         .show();

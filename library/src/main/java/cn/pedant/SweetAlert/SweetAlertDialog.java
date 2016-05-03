@@ -17,6 +17,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.pnikosis.materialishprogress.ProgressWheel;
+
 import java.util.List;
 
 public class SweetAlertDialog extends Dialog implements View.OnClickListener {
@@ -33,11 +35,13 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
     private String mTitleText;
     private String mContentText;
     private boolean mShowCancel;
+    private boolean mShowContent;
     private String mCancelText;
     private String mConfirmText;
     private int mAlertType;
     private FrameLayout mErrorFrame;
     private FrameLayout mSuccessFrame;
+    private FrameLayout mProgressFrame;
     private SuccessTickView mSuccessTick;
     private ImageView mErrorX;
     private View mSuccessLeftMask;
@@ -46,15 +50,18 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
     private ImageView mCustomImage;
     private Button mConfirmButton;
     private Button mCancelButton;
+    private ProgressHelper mProgressHelper;
     private FrameLayout mWarningFrame;
     private OnSweetClickListener mCancelClickListener;
     private OnSweetClickListener mConfirmClickListener;
+    private boolean mCloseFromCancel;
 
     public static final int NORMAL_TYPE = 0;
     public static final int ERROR_TYPE = 1;
     public static final int SUCCESS_TYPE = 2;
     public static final int WARNING_TYPE = 3;
     public static final int CUSTOM_IMAGE_TYPE = 4;
+    public static final int PROGRESS_TYPE = 5;
 
     public static interface OnSweetClickListener {
         public void onClick (SweetAlertDialog sweetAlertDialog);
@@ -68,6 +75,7 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
         super(context, R.style.alert_dialog);
         setCancelable(true);
         setCanceledOnTouchOutside(false);
+        mProgressHelper = new ProgressHelper(context);
         mAlertType = alertType;
         mErrorInAnim = OptAnimationLoader.loadAnimation(getContext(), R.anim.error_frame_in);
         mErrorXInAnim = (AnimationSet)OptAnimationLoader.loadAnimation(getContext(), R.anim.error_x_in);
@@ -101,7 +109,11 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
                 mDialogView.post(new Runnable() {
                     @Override
                     public void run() {
-                        SweetAlertDialog.super.dismiss();
+                        if (mCloseFromCancel) {
+                            SweetAlertDialog.super.cancel();
+                        } else {
+                            SweetAlertDialog.super.dismiss();
+                        }
                     }
                 });
             }
@@ -126,12 +138,14 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.alert_dialog);
+
         mDialogView = getWindow().getDecorView().findViewById(android.R.id.content);
         mTitleTextView = (TextView)findViewById(R.id.title_text);
         mContentTextView = (TextView)findViewById(R.id.content_text);
         mErrorFrame = (FrameLayout)findViewById(R.id.error_frame);
         mErrorX = (ImageView)mErrorFrame.findViewById(R.id.error_x);
         mSuccessFrame = (FrameLayout)findViewById(R.id.success_frame);
+        mProgressFrame = (FrameLayout)findViewById(R.id.progress_dialog);
         mSuccessTick = (SuccessTickView)mSuccessFrame.findViewById(R.id.success_tick);
         mSuccessLeftMask = mSuccessFrame.findViewById(R.id.mask_left);
         mSuccessRightMask = mSuccessFrame.findViewById(R.id.mask_right);
@@ -139,16 +153,16 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
         mWarningFrame = (FrameLayout)findViewById(R.id.warning_frame);
         mConfirmButton = (Button)findViewById(R.id.confirm_button);
         mCancelButton = (Button)findViewById(R.id.cancel_button);
-
+        mProgressHelper.setProgressWheel((ProgressWheel)findViewById(R.id.progressWheel));
         mConfirmButton.setOnClickListener(this);
         mCancelButton.setOnClickListener(this);
 
         setTitleText(mTitleText);
         setContentText(mContentText);
-        showCancelButton(mShowCancel);
         setCancelText(mCancelText);
         setConfirmText(mConfirmText);
         changeAlertType(mAlertType, true);
+
     }
 
     private void restore () {
@@ -156,6 +170,8 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
         mErrorFrame.setVisibility(View.GONE);
         mSuccessFrame.setVisibility(View.GONE);
         mWarningFrame.setVisibility(View.GONE);
+        mProgressFrame.setVisibility(View.GONE);
+        mConfirmButton.setVisibility(View.VISIBLE);
 
         mConfirmButton.setBackgroundResource(R.drawable.blue_button_background);
         mErrorFrame.clearAnimation();
@@ -199,6 +215,10 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
                     break;
                 case CUSTOM_IMAGE_TYPE:
                     setCustomImage(mCustomImgDrawable);
+                    break;
+                case PROGRESS_TYPE:
+                    mProgressFrame.setVisibility(View.VISIBLE);
+                    mConfirmButton.setVisibility(View.GONE);
                     break;
             }
             if (!fromCreate) {
@@ -248,7 +268,7 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
     public SweetAlertDialog setContentText (String text) {
         mContentText = text;
         if (mContentTextView != null && mContentText != null) {
-            mContentTextView.setVisibility(View.VISIBLE);
+            showContentText(true);
             mContentTextView.setText(mContentText);
         }
         return this;
@@ -266,6 +286,18 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
         return this;
     }
 
+    public boolean isShowContentText () {
+        return mShowContent;
+    }
+
+    public SweetAlertDialog showContentText (boolean isShow) {
+        mShowContent = isShow;
+        if (mContentTextView != null) {
+            mContentTextView.setVisibility(mShowContent ? View.VISIBLE : View.GONE);
+        }
+        return this;
+    }
+
     public String getCancelText () {
         return mCancelText;
     }
@@ -273,6 +305,7 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
     public SweetAlertDialog setCancelText (String text) {
         mCancelText = text;
         if (mCancelButton != null && mCancelText != null) {
+            showCancelButton(true);
             mCancelButton.setText(mCancelText);
         }
         return this;
@@ -305,7 +338,23 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
         playAnimation();
     }
 
-    public void dismiss() {
+    /**
+     * The real Dialog.cancel() will be invoked async-ly after the animation finishes.
+     */
+    @Override
+    public void cancel() {
+        dismissWithAnimation(true);
+    }
+
+    /**
+     * The real Dialog.dismiss() will be invoked async-ly after the animation finishes.
+     */
+    public void dismissWithAnimation() {
+        dismissWithAnimation(false);
+    }
+
+    private void dismissWithAnimation(boolean fromCancel) {
+        mCloseFromCancel = fromCancel;
         mConfirmButton.startAnimation(mOverlayOutAnim);
         mDialogView.startAnimation(mModalOutAnim);
     }
@@ -316,14 +365,18 @@ public class SweetAlertDialog extends Dialog implements View.OnClickListener {
             if (mCancelClickListener != null) {
                 mCancelClickListener.onClick(SweetAlertDialog.this);
             } else {
-                dismiss();
+                dismissWithAnimation();
             }
         } else if (v.getId() == R.id.confirm_button) {
             if (mConfirmClickListener != null) {
                 mConfirmClickListener.onClick(SweetAlertDialog.this);
             } else {
-                dismiss();
+                dismissWithAnimation();
             }
         }
+    }
+
+    public ProgressHelper getProgressHelper () {
+        return mProgressHelper;
     }
 }

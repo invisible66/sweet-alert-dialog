@@ -2,11 +2,15 @@ package cn.pedant.SweetAlert.sample;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.view.View;
 
 import cn.pedant.SweetAlert.SweetAlertDialog;
 
 public class SampleActivity extends Activity implements View.OnClickListener {
+
+    private int i = -1;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -18,6 +22,7 @@ public class SampleActivity extends Activity implements View.OnClickListener {
         findViewById(R.id.warning_confirm_test).setOnClickListener(this);
         findViewById(R.id.warning_cancel_test).setOnClickListener(this);
         findViewById(R.id.custom_img_test).setOnClickListener(this);
+        findViewById(R.id.progress_dialog).setOnClickListener(this);
     }
 
     @Override
@@ -25,8 +30,10 @@ public class SampleActivity extends Activity implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.basic_test:
                 // default title "Here's a message!"
-                new SweetAlertDialog(this)
-                        .show();
+                SweetAlertDialog sd = new SweetAlertDialog(this);
+                sd.setCancelable(true);
+                sd.setCanceledOnTouchOutside(true);
+                sd.show();
                 break;
             case R.id.under_text_test:
                 new SweetAlertDialog(this)
@@ -111,6 +118,48 @@ public class SampleActivity extends Activity implements View.OnClickListener {
                         .setContentText("Here's a custom image.")
                         .setCustomImage(R.drawable.custom_img)
                         .show();
+                break;
+            case R.id.progress_dialog:
+                final SweetAlertDialog pDialog = new SweetAlertDialog(this, SweetAlertDialog.PROGRESS_TYPE)
+                        .setTitleText("Loading");
+                pDialog.show();
+                pDialog.setCancelable(false);
+                new CountDownTimer(800 * 7, 800) {
+                    public void onTick(long millisUntilFinished) {
+                        // you can change the progress bar color by ProgressHelper every 800 millis
+                        i++;
+                        switch (i){
+                            case 0:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.blue_btn_bg_color));
+                                break;
+                            case 1:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.material_deep_teal_50));
+                                break;
+                            case 2:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.success_stroke_color));
+                                break;
+                            case 3:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.material_deep_teal_20));
+                                break;
+                            case 4:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.material_blue_grey_80));
+                                break;
+                            case 5:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.warning_stroke_color));
+                                break;
+                            case 6:
+                                pDialog.getProgressHelper().setBarColor(getResources().getColor(R.color.success_stroke_color));
+                                break;
+                        }
+                    }
+
+                    public void onFinish() {
+                        i = -1;
+                        pDialog.setTitleText("Success!")
+                                .setConfirmText("OK")
+                                .changeAlertType(SweetAlertDialog.SUCCESS_TYPE);
+                    }
+                }.start();
                 break;
         }
     }
